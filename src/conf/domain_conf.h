@@ -2858,6 +2858,48 @@ struct _virDomainKeyWrapDef {
 };
 
 typedef enum {
+    VIR_DOMAIN_SOCKET_ADDRESS_NONE,
+    VIR_DOMAIN_SOCKET_ADDRESS_INET,
+    VIR_DOMAIN_SOCKET_ADDRESS_UNIX,
+    VIR_DOMAIN_SOCKET_ADDRESS_VSOCK,
+    VIR_DOMAIN_SOCKET_ADDRESS_FD,
+
+    VIR_DOMAIN_SOCKET_ADDRESS_LAST
+} virDomainSocketAddress;
+
+typedef struct _InetSocketAddress InetSocketAddress;
+typedef struct _UnixSocketAddress UnixSocketAddress;
+typedef struct _VsockSocketAddress VsockSocketAddress;
+typedef struct _FdSocketAddress FdSocketAddress;
+
+struct _InetSocketAddress {
+    char *host;
+    char *port;
+    virTristateBool numeric;
+    bool has_to;
+    unsigned int to;
+    virTristateBool ipv4;
+    virTristateBool ipv6;
+    virTristateBool keep_alive;
+    virTristateBool mptcp;
+};
+
+struct _UnixSocketAddress {
+    char *path;
+    virTristateBool abstract;
+    virTristateBool tight;
+};
+
+struct _VsockSocketAddress {
+    char *cid;
+    char *port;
+};
+
+struct _FdSocketAddress {
+    char *str;
+};
+
+typedef enum {
     VIR_DOMAIN_LAUNCH_SECURITY_NONE,
     VIR_DOMAIN_LAUNCH_SECURITY_SEV,
     VIR_DOMAIN_LAUNCH_SECURITY_PV,
@@ -2878,11 +2920,22 @@ struct _virDomainSEVDef {
     virTristateBool kernel_hashes;
 };
 
+typedef struct SocketAddress {
+    virDomainSocketAddress type;
+    union {
+        InetSocketAddress inet;
+        UnixSocketAddress Unix;
+        VsockSocketAddress vsock;
+        FdSocketAddress fd;
+    } u;
+} SocketAddress;
+
 struct _virDomainTDXDef {
     unsigned long long policy;
     char *mrconfigid;
     char *mrowner;
     char *mrownerconfig;
+    SocketAddress qgs_sa;
 };
 
 #define VIR_DOMAIN_TDX_POLICY_DEBUG              0x1
@@ -4263,6 +4316,7 @@ VIR_ENUM_DECL(virDomainCryptoBackend);
 VIR_ENUM_DECL(virDomainShmemModel);
 VIR_ENUM_DECL(virDomainShmemRole);
 VIR_ENUM_DECL(virDomainLaunchSecurity);
+VIR_ENUM_DECL(virDomainSocketAddress);
 /* from libvirt.h */
 VIR_ENUM_DECL(virDomainState);
 VIR_ENUM_DECL(virDomainNostateReason);
