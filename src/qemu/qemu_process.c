@@ -453,6 +453,7 @@ qemuProcessFakeRebootViaRecreate(virDomainObj *vm)
 {
     qemuDomainObjPrivate *priv = vm->privateData;
     virQEMUDriver *driver = priv->driver;
+    virObjectEvent *event = NULL;
     int ret = -1;
 
     VIR_DEBUG("Handle secure guest reboot: destroy phase");
@@ -469,6 +470,11 @@ qemuProcessFakeRebootViaRecreate(virDomainObj *vm)
     qemuProcessStop(driver, vm, VIR_DOMAIN_SHUTOFF_DESTROYED,
                     VIR_ASYNC_JOB_NONE, 0);
     virDomainAuditStop(vm, "destroyed");
+
+    event = virDomainEventLifecycleNewFromObj(vm,
+                                              VIR_DOMAIN_EVENT_STOPPED,
+                                              VIR_DOMAIN_EVENT_STOPPED_RECREATION);
+    virObjectEventStateQueue(driver->domainEventState, event);
 
     /* skip remove inactive domain from active list */
     qemuProcessEndStopJob(vm);
@@ -490,6 +496,10 @@ qemuProcessFakeRebootViaRecreate(virDomainObj *vm)
     }
 
     virDomainAuditStart(vm, "booted", true);
+    event = virDomainEventLifecycleNewFromObj(vm,
+                                              VIR_DOMAIN_EVENT_STARTED,
+                                              VIR_DOMAIN_EVENT_STARTED_RECREATION);
+    virObjectEventStateQueue(driver->domainEventState, event);
 
     qemuDomainSaveStatus(vm);
     ret = 0;
